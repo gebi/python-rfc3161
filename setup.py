@@ -34,10 +34,9 @@ class TestCommand(Command):
 setup(name='rfc3161',
         version=rfc3161.VERSION,
         license='MIT',
-        description='Python implementation of the three main OATH specifications: HOTP, TOTP and OCRA',
-        url='https://github.com/bdauvergne/python-oath',
+        description='Python implementation of the RFC3161 specification, using pyasn1',
         author='Benjamin Dauvergne',
         author_email='bdauvergne@entrouvert.com',
-        packages=['oath'],
+        packages=['rfc3161'],
         requires=['pyasn1'],
         cmdclass={'test': TestCommand})
