@@ -5,8 +5,6 @@ from glob import glob
 from os.path import splitext, basename, join as pjoin
 import os
 
-import rfc3161
-
 class TestCommand(Command):
     user_options = [ ]
 
