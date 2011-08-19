@@ -1,6 +1,7 @@
 from pyasn1.type import univ, namedtype, tag, namedval, constraint, char, useful
 from pyasn1_modules.rfc2459 import AlgorithmIdentifier, Extensions, MAX
 from pyasn1_modules.rfc2315 import ContentInfo, signedData, SignedData
+from pyasn1.codec.ber import decoder
 
 __all__ = ( 'TimeStampReq', 'MessageImprint', 'PKIFreeText', 'PKIStatus', 'PKIFailureInfo', 'PKIStatusInfo', 'TimeStampResp', 'Accuracy', 'AnotherName', 'GeneralName', 'TimeStampToken', 'TSTInfo')
 
@@ -13,6 +14,14 @@ class MessageImprint(univ.Sequence):
     componentType = namedtype.NamedTypes(
             namedtype.NamedType('hashAlgorithm', AlgorithmIdentifier()),
             namedtype.NamedType('hashedMessage', univ.OctetString()),)
+
+    @property
+    def hash_algorithm(self):
+        return self[0]
+
+    @property
+    def hashed_message(self):
+        return self[1]
 
 class TimeStampReq(univ.Sequence):
     componentType = namedtype.NamedTypes(
@@ -79,10 +88,32 @@ class TimeStampToken(ContentInfo):
                 SignedData().subtype(explicitTag=tag.Tag(tag.tagClassContext,
                     tag.tagFormatConstructed, 0))))
 
+    @property
+    def content(self):
+        return self[1]
+
+    @property
+    def tst_info(self):
+         x, substrate = decoder.decode(str(self.content['contentInfo']['content']))
+         if substrate:
+             raise ValueError('Incomplete decoding')
+         x, substrate = decoder.decode(str(x), asn1Spec=TSTInfo())
+         if substrate:
+             raise ValueError('Incomplete decoding')
+         return x
+
 class TimeStampResp(univ.Sequence):
     componentType = namedtype.NamedTypes(
             namedtype.NamedType('status', PKIStatusInfo()),
             namedtype.OptionalNamedType('timeStampToken', TimeStampToken()))
+
+    @property
+    def status(self):
+        return self[0]
+
+    @property
+    def time_stamp_token(self):
+        return self[1]
 
 class Accuracy(univ.Sequence):
     componentType = namedtype.NamedTypes(
@@ -139,3 +170,15 @@ class TSTInfo(univ.Sequence):
                 explicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 0))),
             namedtype.OptionalNamedType('extensions', Extensions().subtype(
                 implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatSimple, 1))))
+
+    @property
+    def version(self):
+        return self[0]
+
+    @property
+    def policy(self):
+        return self[1]
+
+    @property
+    def message_imprint(self):
+        return self[2]
