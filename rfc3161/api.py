@@ -3,7 +3,6 @@ from pyasn1_modules import rfc2459
 from pyasn1.type import univ
 from pyasn1.error import PyAsn1Error
 import M2Crypto.X509 as X509
-import M2Crypto.SSL as SSL
 
 import rfc3161
 import hashlib
