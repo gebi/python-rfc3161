@@ -1,2 +1,3 @@
 include tests/*.py
+recursive-include data *.crt
 include README.rst
