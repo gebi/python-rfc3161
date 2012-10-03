@@ -9,15 +9,20 @@ import hashlib
 import urllib2
 import base64
 
-__all__ = ('RemoteTimestamper','check_timestamp')
+__all__ = ('RemoteTimestamper','check_timestamp','get_hash_oid')
 
 id_attribute_messageDigest = univ.ObjectIdentifier((1,2,840,113549,1,9,4,))
 
-def check_timestamp(tst, certificate, data=None, sha1=None):
+def get_hash_oid(hashname):
+    return rfc3161.__dict__['id_'+hashname]
+
+def check_timestamp(tst, certificate, data=None, sha1=None, hashname=None):
+    hashobj = hashlib.new(hashname or 'sha1')
     if not sha1:
         if not data:
             raise ValueError("check_timestamp requires data or sha1 argument")
-        digest = hashlib.sha1(data).digest()
+        hashobj.update(data)
+        digest = hashobj.digest()
     else:
         digest = sha1
 
@@ -35,7 +40,7 @@ def check_timestamp(tst, certificate, data=None, sha1=None):
         return False, "missing certificate"
     # check message imprint with respect to locally computed digest
     message_imprint = tst.tst_info.message_imprint
-    if message_imprint.hash_algorithm[0] != rfc3161.id_sha1 or \
+    if message_imprint.hash_algorithm[0] != get_hash_oid(hashobj.name) or \
         str(message_imprint.hashed_message) != digest:
             return False, 'Message imprint mismatch'
     #
@@ -88,30 +93,32 @@ def check_timestamp(tst, certificate, data=None, sha1=None):
 
 
 class RemoteTimestamper(object):
-    def __init__(self, url, certificate=None, capath=None, cafile=None, username=None, password=None):
+    def __init__(self, url, certificate=None, capath=None, cafile=None, username=None, password=None, hashname=None):
         self.url = url
         self.certificate = certificate
         self.capath = capath
         self.cafile = cafile
         self.username = username
         self.password = password
+        self.hashobj = hashlib.new(hashname or 'sha1')
 
     def check_response(self, response, digest):
         '''
            Check validity of a TimeStampResponse
         '''
         tst = response.time_stamp_token
-        return check_timestamp(tst, sha1=digest, certificate=self.certificate)
+        return check_timestamp(tst, sha1=digest, certificate=self.certificate, hashname=self.hashobj.name)
 
     def __call__(self, data=None, sha1=None):
         algorithm_identifier = rfc2459.AlgorithmIdentifier()
-        algorithm_identifier.setComponentByPosition(0, rfc3161.id_sha1)
+        algorithm_identifier.setComponentByPosition(0, get_hash_oid(self.hashobj.name))
         message_imprint = rfc3161.MessageImprint()
         message_imprint.setComponentByPosition(0, algorithm_identifier)
         if data:
-            sha1 = hashlib.sha1(data).digest()
+            self.hashobj.update(data)
+            sha1 = self.hashobj.digest()
         elif sha1:
-            assert len(sha1) == 20
+            assert len(sha1) == self.hashobj.digest_size
         else:
             raise ValueError('You must pass some data to digest, or the sha1 digest')
         message_imprint.setComponentByPosition(1, sha1)
