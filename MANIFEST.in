@@ -1,3 +1,5 @@
 include tests/*.py
+
 recursive-include data *.crt
+recursive-include spec *.asn88
 include README.rst
