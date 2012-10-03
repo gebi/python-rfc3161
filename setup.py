@@ -30,7 +30,7 @@ class TestCommand(Command):
         t.run(tests)
 
 setup(name='rfc3161',
-        version='0.1.3',
+        version='0.1.4',
         license='MIT',
         description='Python implementation of the RFC3161 specification, using pyasn1',
         author='Benjamin Dauvergne',
