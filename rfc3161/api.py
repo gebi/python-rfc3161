@@ -26,10 +26,11 @@ def check_timestamp(tst, certificate, data=None, sha1=None):
         if substrate:
             return False, "extra data after tst"
     signed_data = tst.content
-    if certificate.startswith('-----'):
-        certificate = X509.load_cert_string(certificate, X509.FORMAT_PEM)
-    elif certificate:
-        certificate = X509.load_cert_string(certificate, X509.FORMAT_DER)
+    if certificate != "":
+        try:
+            certificate = X509.load_cert_string(certificate, X509.FORMAT_PEM)
+        except:
+            certificate = X509.load_cert_string(certificate, X509.FORMAT_DER)
     else:
         return False, "missing certificate"
     # check message imprint with respect to locally computed digest
