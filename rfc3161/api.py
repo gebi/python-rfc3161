@@ -3,18 +3,22 @@ from pyasn1_modules import rfc2459
 from pyasn1.type import univ
 from pyasn1.error import PyAsn1Error
 import M2Crypto.X509 as X509
+import socket
 
 import rfc3161
 import hashlib
 import urllib2
 import base64
 
-__all__ = ('RemoteTimestamper','check_timestamp','get_hash_oid')
+__all__ = ('RemoteTimestamper','check_timestamp','get_hash_oid', 'TimestampingError')
 
 id_attribute_messageDigest = univ.ObjectIdentifier((1,2,840,113549,1,9,4,))
 
 def get_hash_oid(hashname):
     return rfc3161.__dict__['id_'+hashname]
+
+class TimestampingError(RuntimeError):
+    pass
 
 def check_timestamp(tst, certificate, data=None, sha1=None, hashname=None):
     hashobj = hashlib.new(hashname or 'sha1')
@@ -132,7 +136,10 @@ class RemoteTimestamper(object):
         if self.username != None:
             base64string = base64.standard_b64encode('%s:%s' % (self.username, self.password))
             http_request.add_header("Authorization", "Basic %s" % base64string)
-        response = urllib2.urlopen(http_request).read()
+        try:
+            response = urllib2.urlopen(http_request).read()
+        except (IOError, socket.error), e:
+            raise TimestampingError('Unable to send the request to %s' % self.url, e)
         # open('response.tsr', 'w').write(response)
         tst_response, substrate = decoder.decode(response, asn1Spec=rfc3161.TimeStampResp())
         if substrate:
