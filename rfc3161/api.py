@@ -7,6 +7,7 @@ import M2Crypto.X509 as X509
 import rfc3161
 import hashlib
 import urllib2
+import base64
 
 __all__ = ('RemoteTimestamper','check_timestamp')
 
@@ -86,11 +87,13 @@ def check_timestamp(tst, certificate, data=None, sha1=None):
 
 
 class RemoteTimestamper(object):
-    def __init__(self, url, certificate=None, capath=None, cafile=None):
+    def __init__(self, url, certificate=None, capath=None, cafile=None, username=None, password=None):
         self.url = url
         self.certificate = certificate
         self.capath = capath
         self.cafile = cafile
+        self.username = username
+        self.password = password
 
     def check_response(self, response, digest):
         '''
@@ -118,6 +121,9 @@ class RemoteTimestamper(object):
         binary_request = encoder.encode(request)
         http_request = urllib2.Request(self.url, binary_request,
                 { 'Content-Type': 'application/timestamp-query' })
+        if self.username != None:
+            base64string = base64.standard_b64encode('%s:%s' % (self.username, self.password))
+            http_request.add_header("Authorization", "Basic %s" % base64string)
         response = urllib2.urlopen(http_request).read()
         # open('response.tsr', 'w').write(response)
         tst_response, substrate = decoder.decode(response, asn1Spec=rfc3161.TimeStampResp())
